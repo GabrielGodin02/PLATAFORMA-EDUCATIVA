@@ -100,13 +100,7 @@ const StudentList = ({ students = [] }) => {
                                     </span>
                                 </div>
 
-                                <div className="flex items-center gap-2 text-sm">
-                                    <Key className="w-4 h-4 text-gray-400" />
-                                    <span className="text-gray-600">Contraseña:</span>
-                                    <span className="font-mono bg-gray-100 px-2 py-1 rounded text-gray-800">
-                                        {student.password} {/* In a real app, don't display password */}
-                                    </span>
-                                </div>
+                               
 
                                 <div className="flex items-center gap-2 text-sm">
                                     <Calendar className="w-4 h-4 text-gray-400" />
