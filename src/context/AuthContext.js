@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../utils/supabaseClient';
+import bcrypt from 'bcryptjs';
 
 const AuthContext = createContext();
 
@@ -50,42 +51,39 @@ export const AuthProvider = ({ children }) => {
             let foundUser = null;
             let role = null;
 
-            // 1. Intentar buscar como Admin
+            // 1. Buscar en admins
             const { data: adminData } = await supabase
                 .from('admins')
                 .select('*')
                 .eq('email', emailOrUsername)
-                .eq('password', password)
                 .single();
 
-            if (adminData) {
+            if (adminData && bcrypt.compareSync(password, adminData.password)) {
                 foundUser = adminData;
                 role = 'admin';
             } else {
-                // 2. Intentar buscar como profesor
+                // 2. Buscar en teachers
                 const { data: teacherData } = await supabase
                     .from('teachers')
                     .select('*')
                     .eq('email', emailOrUsername)
-                    .eq('password', password)
                     .single();
 
-                if (teacherData) {
+                if (teacherData && bcrypt.compareSync(password, teacherData.password)) {
                     if (!teacherData.is_active) {
                         throw new Error('Tu cuenta de profesor está desactivada. Contacta al administrador.');
                     }
                     foundUser = teacherData;
                     role = 'teacher';
                 } else {
-                    // 3. Si no es profesor, intentar buscar como estudiante
+                    // 3. Buscar en students
                     const { data: studentData } = await supabase
                         .from('students')
                         .select('*')
                         .eq('username', emailOrUsername)
-                        .eq('password', password)
                         .single();
-                    
-                    if (studentData) {
+
+                    if (studentData && bcrypt.compareSync(password, studentData.password)) {
                         foundUser = studentData;
                         role = 'student';
                     }
@@ -110,9 +108,11 @@ export const AuthProvider = ({ children }) => {
         setNetworkError(null);
         try {
             const newId = crypto.randomUUID();
+            const hashedPassword = bcrypt.hashSync(password, 10);
+
             const { data, error } = await supabase
                 .from('teachers')
-                .insert([{ id: newId, name, email, password, is_active: true }])
+                .insert([{ id: newId, name, email, password: hashedPassword, is_active: true }])
                 .select()
                 .single();
 
@@ -131,14 +131,15 @@ export const AuthProvider = ({ children }) => {
         setLoading(true);
         setNetworkError(null);
         try {
-            // Validación: Asegurarse de que el nombre de usuario no es un email
             if (username.includes('@')) {
                 throw new Error('El nombre de usuario no puede ser una dirección de correo electrónico.');
             }
             const newId = crypto.randomUUID();
+            const hashedPassword = bcrypt.hashSync(password, 10);
+
             const { data, error } = await supabase
                 .from('students')
-                .insert([{ id: newId, name, username, password, teacher_id: teacherId }])
+                .insert([{ id: newId, name, username, password: hashedPassword, teacher_id: teacherId }])
                 .select()
                 .single();
 
