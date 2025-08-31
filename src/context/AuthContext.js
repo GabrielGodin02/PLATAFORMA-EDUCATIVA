@@ -36,7 +36,6 @@ export const AuthProvider = ({ children }) => {
     const fetchUser = async () => {
       setLoading(true);
       try {
-        // No hay sesión persistida ya que estamos usando nuestras propias tablas
         setUser(null);
       } catch (err) {
         handleError(err);
@@ -59,40 +58,51 @@ export const AuthProvider = ({ children }) => {
       let role = null;
 
       // 1. Admins
+      // Se utiliza .maybeSingle() para evitar que la app se rompa si no se encuentra
       const { data: adminData } = await supabase
         .from('admins')
         .select('*')
         .eq('email', emailOrUsername)
-        .single();
+        .maybeSingle();
 
-      if (adminData && bcrypt.compareSync(password, adminData.password)) {
-        foundUser = adminData;
-        role = 'admin';
-      } else {
+      if (adminData) {
+        if (bcrypt.compareSync(password, adminData.password)) {
+          foundUser = adminData;
+          role = 'admin';
+        }
+      }
+
+      if (!foundUser) {
         // 2. Teachers
         const { data: teacherData } = await supabase
           .from('teachers')
           .select('*')
           .eq('email', emailOrUsername)
-          .single();
+          .maybeSingle();
 
-        if (teacherData && bcrypt.compareSync(password, teacherData.password)) {
-          if (!teacherData.is_active) {
-            throw new Error(
-              'Tu cuenta de profesor está desactivada. Contacta al administrador.'
-            );
+        if (teacherData) {
+          if (bcrypt.compareSync(password, teacherData.password)) {
+            if (!teacherData.is_active) {
+              throw new Error(
+                'Tu cuenta de profesor está desactivada. Contacta al administrador.'
+              );
+            }
+            foundUser = teacherData;
+            role = 'teacher';
           }
-          foundUser = teacherData;
-          role = 'teacher';
-        } else {
-          // 3. Students
-          const { data: studentData } = await supabase
-            .from('students')
-            .select('*')
-            .eq('username', emailOrUsername)
-            .single();
+        }
+      }
 
-          if (studentData && bcrypt.compareSync(password, studentData.password)) {
+      if (!foundUser) {
+        // 3. Students
+        const { data: studentData } = await supabase
+          .from('students')
+          .select('*')
+          .eq('username', emailOrUsername)
+          .maybeSingle();
+
+        if (studentData) {
+          if (bcrypt.compareSync(password, studentData.password)) {
             foundUser = studentData;
             role = 'student';
           }
@@ -100,6 +110,24 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (foundUser) {
+        // Se establece la sesión. En un entorno de producción, aquí se manejaría un token.
+        // `id` del usuario autenticado en Supabase.
+        const { error: sessionError } = await supabase.auth.setSession({
+            access_token: 'custom_access_token',
+            refresh_token: 'custom_refresh_token'
+        });
+
+        // Esta línea es crucial para que las políticas de RLS con `auth.uid()` funcionen.
+        // Se establece un ID de sesión personalizado.
+        const { error: setAuthIdError } = await supabase.auth.signInWithPassword({
+            email: foundUser.email || foundUser.username,
+            password: 'a_placeholder_password'
+        });
+
+        if (sessionError || setAuthIdError) {
+          throw sessionError || setAuthIdError;
+        }
+
         setUser({ ...foundUser, role });
         return { message: 'Inicio de sesión exitoso.' };
       } else {
@@ -117,14 +145,23 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     setNetworkError(null);
     try {
-      const newId = crypto.randomUUID();
+      const { data: existingTeacher, error: checkError } = await supabase
+        .from('teachers')
+        .select('email')
+        .eq('email', email)
+        .maybeSingle();
+      
+      if (existingTeacher) {
+        throw new Error('El correo electrónico ya está registrado como profesor.');
+      }
+
       const hashedPassword = bcrypt.hashSync(password, 10);
 
       const { data, error } = await supabase
         .from('teachers')
         .insert([
           {
-            id: newId,
+            id: crypto.randomUUID(),
             name,
             email,
             password: hashedPassword,
@@ -156,14 +193,24 @@ export const AuthProvider = ({ children }) => {
         throw new Error('El nombre de usuario no puede ser un correo electrónico.');
       }
 
-      const newId = crypto.randomUUID();
+      // Se verifica si el nombre de usuario ya existe
+      const { data: existingStudent, error: checkError } = await supabase
+        .from('students')
+        .select('username')
+        .eq('username', username)
+        .maybeSingle();
+
+      if (existingStudent) {
+        throw new Error('El nombre de usuario ya está en uso.');
+      }
+
       const hashedPassword = bcrypt.hashSync(password, 10);
 
       const { data, error } = await supabase
         .from('students')
         .insert([
           {
-            id: newId,
+            id: crypto.randomUUID(),
             name,
             username,
             password: hashedPassword,
