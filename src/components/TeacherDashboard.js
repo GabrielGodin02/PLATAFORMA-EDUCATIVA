@@ -65,6 +65,9 @@ const TeacherDashboard = () => {
         { id: 'students', label: 'Estudiantes', icon: Users, roles: ['teacher'] },
         { id: 'register', label: 'Registrar', icon: UserPlus, roles: ['teacher'] },
         { id: 'grades', label: 'Calificaciones', icon: BookOpen, roles: ['teacher'] },
+        { id: 'assign-subject', label: 'Asignar Materia', icon: PlusCircle, roles: ['teacher'] },
+        { id: 'remove-subject', label: 'Eliminar Materia', icon: Trash2, roles: ['teacher'] },
+        { id: 'transfer-student', label: 'Transferir', icon: MoveRight, roles: ['teacher'] },
         { id: 'admin', label: 'Admin', icon: Shield, roles: ['admin'] } // Nueva pestaña para el admin
     ];
 
@@ -132,6 +135,12 @@ const TeacherDashboard = () => {
                 return <GradeManagement students={students} />;
             case 'admin':
                 return <AdminPanel teachers={teachers} onTeacherStatusChange={fetchTeachers} />;
+            case 'assign-subject':
+                return <AssignSubject students={students} onSubjectAssigned={fetchStudents} />;
+            case 'remove-subject':
+                return <RemoveSubject students={students} onSubjectRemoved={fetchStudents} />;
+            case 'transfer-student':
+                return <StudentTransfer students={students} onTransferSuccess={fetchStudents} />;
             default:
                 return null;
         }
