@@ -57,44 +57,27 @@ export const AuthProvider = ({ children }) => {
       let foundUser = null;
       let role = null;
 
-      // 1. Admins
-      // Se utiliza .maybeSingle() para evitar que la app se rompa si no se encuentra
-      const { data: adminData } = await supabase
-        .from('admins')
+      // Buscar en la tabla de profesores
+      const { data: teacherData } = await supabase
+        .from('teachers')
         .select('*')
         .eq('email', emailOrUsername)
         .maybeSingle();
 
-      if (adminData) {
-        if (bcrypt.compareSync(password, adminData.password)) {
-          foundUser = adminData;
-          role = 'admin';
-        }
-      }
-
-      if (!foundUser) {
-        // 2. Teachers
-        const { data: teacherData } = await supabase
-          .from('teachers')
-          .select('*')
-          .eq('email', emailOrUsername)
-          .maybeSingle();
-
-        if (teacherData) {
-          if (bcrypt.compareSync(password, teacherData.password)) {
-            if (!teacherData.is_active) {
-              throw new Error(
-                'Tu cuenta de profesor está desactivada. Contacta al administrador.'
-              );
-            }
-            foundUser = teacherData;
-            role = 'teacher';
+      if (teacherData) {
+        if (bcrypt.compareSync(password, teacherData.password)) {
+          if (!teacherData.is_active) {
+            throw new Error(
+              'Tu cuenta de profesor está desactivada. Contacta al administrador.'
+            );
           }
+          foundUser = teacherData;
+          role = 'teacher';
         }
       }
 
       if (!foundUser) {
-        // 3. Students
+        // Buscar en la tabla de estudiantes
         const { data: studentData } = await supabase
           .from('students')
           .select('*')
