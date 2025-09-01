@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase, setSessionTeacherId } from '../utils/supabaseClient';
+import { supabase } from '../utils/supabaseClient';
 import bcrypt from 'bcryptjs';
 
 const AuthContext = createContext();
@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
     throw err;
   };
 
-  // Inicialización (podría no ser necesaria si el login es el único punto de entrada)
+  // Inicialización
   useEffect(() => {
     const fetchUser = async () => {
       setLoading(true);
@@ -44,6 +44,7 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
       }
     };
+
     fetchUser();
   }, []);
 
@@ -94,13 +95,6 @@ export const AuthProvider = ({ children }) => {
       if (foundUser) {
         // La autenticación es exitosa. Se establece el usuario en el estado de React.
         setUser({ ...foundUser, role });
-        
-        // ¡Aquí está la parte CLAVE!
-        // Pasamos el ID del profesor a la sesión de la base de datos
-        if (role === 'teacher') {
-          await setSessionTeacherId(foundUser.id);
-        }
-
         return { message: 'Inicio de sesión exitoso.' };
       } else {
         throw new Error('Credenciales incorrectas.');
@@ -117,7 +111,7 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     setNetworkError(null);
     try {
-      const { data: existingTeacher } = await supabase
+      const { data: existingTeacher, error: checkError } = await supabase
         .from('teachers')
         .select('email')
         .eq('email', email)
@@ -165,7 +159,8 @@ export const AuthProvider = ({ children }) => {
         throw new Error('El nombre de usuario no puede ser un correo electrónico.');
       }
 
-      const { data: existingStudent } = await supabase
+      // Se verifica si el nombre de usuario ya existe
+      const { data: existingStudent, error: checkError } = await supabase
         .from('students')
         .select('username')
         .eq('username', username)
@@ -209,6 +204,7 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     setNetworkError(null);
     try {
+        // 1. Verificar si el estudiante tiene asignaturas
         const { data: subjects, error: subjectsError } = await supabase
             .from('subjects')
             .select('id')
@@ -221,6 +217,7 @@ export const AuthProvider = ({ children }) => {
             return { message: 'Operación cancelada.' };
         }
 
+        // 2. Verificar si el estudiante tiene calificaciones
         const { data: grades, error: gradesError } = await supabase
             .from('grades')
             .select('id')
@@ -233,6 +230,7 @@ export const AuthProvider = ({ children }) => {
             return { message: 'Operación cancelada.' };
         }
 
+        // 3. Si no hay datos asociados, procede con la eliminación del estudiante
         const { error: deleteError } = await supabase
             .from('students')
             .delete()
@@ -242,6 +240,7 @@ export const AuthProvider = ({ children }) => {
 
         alert('Estudiante eliminado exitosamente.');
         return { message: 'Estudiante eliminado exitosamente.' };
+
     } catch (err) {
         handleError(err);
     } finally {
@@ -267,7 +266,7 @@ export const AuthProvider = ({ children }) => {
     login,
     registerTeacher,
     registerStudent,
-    deleteStudent,
+    deleteStudent, // <--- Se agrega la nueva función aquí
     logout,
     loading,
     networkError,
