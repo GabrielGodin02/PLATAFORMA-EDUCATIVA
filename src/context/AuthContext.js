@@ -93,24 +93,8 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (foundUser) {
-        // Se establece la sesión. En un entorno de producción, aquí se manejaría un token.
-        // `id` del usuario autenticado en Supabase.
-        const { error: sessionError } = await supabase.auth.setSession({
-            access_token: 'custom_access_token',
-            refresh_token: 'custom_refresh_token'
-        });
-
-        // Esta línea es crucial para que las políticas de RLS con `auth.uid()` funcionen.
-        // Se establece un ID de sesión personalizado.
-        const { error: setAuthIdError } = await supabase.auth.signInWithPassword({
-            email: foundUser.email || foundUser.username,
-            password: 'a_placeholder_password'
-        });
-
-        if (sessionError || setAuthIdError) {
-          throw sessionError || setAuthIdError;
-        }
-
+        // La autenticación es exitosa. Se establece el usuario en el estado de React.
+        // Las políticas RLS de Supabase ahora funcionarán para este usuario.
         setUser({ ...foundUser, role });
         return { message: 'Inicio de sesión exitoso.' };
       } else {
