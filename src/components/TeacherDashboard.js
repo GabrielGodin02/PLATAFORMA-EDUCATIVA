@@ -8,6 +8,7 @@ import GradeManagement from './GradeManagement';
 import AdminPanel from './AdminPanel'; // Nuevo componente para el admin
 import AssignSubject from './AssignSubject';
 import RemoveSubject from './RemoveSubject';
+import StudentTransfer from './StudentTransfer';
 import { PlusCircle, Trash2, MoveRight } from 'lucide-react';
 import { supabase } from '../utils/supabaseClient';
 
