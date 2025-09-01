@@ -59,6 +59,13 @@ const StudentRegistration = ({ onStudentAdded }) => {
         setSuccess('');
         setLoading(true);
 
+        // Verifica que el usuario está disponible y tiene un ID antes de proceder
+        if (!user || !user.id) {
+            setError('Error: La sesión del profesor no está activa. Intenta iniciar sesión de nuevo.');
+            setLoading(false);
+            return;
+        }
+
         if (!formData.name || !formData.username || !formData.password || formData.selectedSubjects.length === 0) {
             setError('Todos los campos son obligatorios y debe seleccionar al menos una materia.');
             setLoading(false);
@@ -66,24 +73,31 @@ const StudentRegistration = ({ onStudentAdded }) => {
         }
 
         try {
-            // Register student in Supabase Auth and 'students' table
-            const newStudent = await registerStudent(formData.name, formData.username, formData.password, user.id);
+            const teacherId = user.id;
 
-            // Add subjects for the new student
+            // Llama a la función de registro para crear el estudiante en la tabla 'students'
+            const newStudent = await registerStudent(formData.name, formData.username, formData.password, teacherId);
+
+            if (!newStudent || !newStudent.user) {
+                throw new Error('No se pudo registrar al estudiante. Por favor, revisa la conexión y las credenciales.');
+            }
+
+            // Mapea las materias para crear los objetos de inserción
             const subjectInserts = formData.selectedSubjects.map(subjectName => ({
-                student_id: newStudent.user.id, // Usamos el ID del usuario devuelto por registerStudent
-                teacher_id: user.id,
+                student_id: newStudent.user.id,
+                teacher_id: teacherId,
                 name: subjectName
             }));
 
+            // Inserta las materias en la tabla 'subjects'
             const { error: subjectsError } = await supabase
                 .from('subjects')
                 .insert(subjectInserts);
 
             if (subjectsError) {
-                console.error('Error adding subjects:', subjectsError);
+                console.error('Error al agregar materias:', subjectsError);
                 setError('Error al agregar materias al estudiante.');
-                // Si falla la inserción de materias, podrías querer eliminar el estudiante recién creado
+                // Si falla la inserción de materias, se elimina al estudiante recién creado
                 await supabase.from('students').delete().eq('id', newStudent.user.id);
                 setLoading(false);
                 return;
@@ -93,7 +107,7 @@ const StudentRegistration = ({ onStudentAdded }) => {
             setFormData({ name: '', username: '', password: '', selectedSubjects: [] });
             setNewSubject('');
             if (onStudentAdded) {
-                onStudentAdded(); // Notify parent component to refresh student list
+                onStudentAdded(); // Notifica al componente padre para que actualice la lista
             }
         } catch (err) {
             setError(err.message || 'Error al registrar estudiante.');
