@@ -44,7 +44,6 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
       }
     };
-
     fetchUser();
   }, []);
 
@@ -93,7 +92,6 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (foundUser) {
-        // La autenticación es exitosa. Se establece el usuario en el estado de React.
         setUser({ ...foundUser, role });
         return { message: 'Inicio de sesión exitoso.' };
       } else {
@@ -111,7 +109,7 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     setNetworkError(null);
     try {
-      const { data: existingTeacher, error: checkError } = await supabase
+      const { data: existingTeacher } = await supabase
         .from('teachers')
         .select('email')
         .eq('email', email)
@@ -159,8 +157,7 @@ export const AuthProvider = ({ children }) => {
         throw new Error('El nombre de usuario no puede ser un correo electrónico.');
       }
 
-      // Se verifica si el nombre de usuario ya existe
-      const { data: existingStudent, error: checkError } = await supabase
+      const { data: existingStudent } = await supabase
         .from('students')
         .select('username')
         .eq('username', username)
@@ -199,55 +196,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // --- ELIMINAR ESTUDIANTE CON VALIDACIÓN ---
-  const deleteStudent = async (studentId) => {
-    setLoading(true);
-    setNetworkError(null);
-    try {
-        // 1. Verificar si el estudiante tiene asignaturas
-        const { data: subjects, error: subjectsError } = await supabase
-            .from('subjects')
-            .select('id')
-            .eq('student_id', studentId);
-
-        if (subjectsError) throw subjectsError;
-
-        if (subjects.length > 0) {
-            alert('El estudiante tiene asignaturas asignadas. Debes eliminarlas primero.');
-            return { message: 'Operación cancelada.' };
-        }
-
-        // 2. Verificar si el estudiante tiene calificaciones
-        const { data: grades, error: gradesError } = await supabase
-            .from('grades')
-            .select('id')
-            .eq('student_id', studentId);
-
-        if (gradesError) throw gradesError;
-
-        if (grades.length > 0) {
-            alert('El estudiante tiene calificaciones. Debes eliminarlas primero.');
-            return { message: 'Operación cancelada.' };
-        }
-
-        // 3. Si no hay datos asociados, procede con la eliminación del estudiante
-        const { error: deleteError } = await supabase
-            .from('students')
-            .delete()
-            .eq('id', studentId);
-
-        if (deleteError) throw deleteError;
-
-        alert('Estudiante eliminado exitosamente.');
-        return { message: 'Estudiante eliminado exitosamente.' };
-
-    } catch (err) {
-        handleError(err);
-    } finally {
-        setLoading(false);
-    }
-  };
-
   // --- LOGOUT ---
   const logout = async () => {
     setLoading(true);
@@ -266,7 +214,6 @@ export const AuthProvider = ({ children }) => {
     login,
     registerTeacher,
     registerStudent,
-    deleteStudent, // <--- Se agrega la nueva función aquí
     logout,
     loading,
     networkError,

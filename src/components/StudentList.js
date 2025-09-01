@@ -1,26 +1,14 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Users, User, Calendar, Key, Search, Trash2 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { Users, User, Calendar, Key, Search } from 'lucide-react';
 
-const StudentList = ({ students = [], fetchStudents }) => {
+const StudentList = ({ students = [] }) => {
     const [searchTerm, setSearchTerm] = useState('');
-    const { deleteStudent } = useAuth();
 
     const filteredStudents = students.filter(student =>
         student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         student.username.toLowerCase().includes(searchTerm.toLowerCase())
     );
-
-    const handleDelete = async (studentId) => {
-        const result = await deleteStudent(studentId);
-
-        if (result && result.message === 'Estudiante eliminado exitosamente.') {
-            if (fetchStudents) {
-                fetchStudents();
-            }
-        }
-    };
 
     if (students.length === 0) {
         return (
@@ -101,14 +89,6 @@ const StudentList = ({ students = [], fetchStudents }) => {
                                     <h3 className="font-semibold text-gray-900">{student.name}</h3>
                                     <p className="text-sm text-gray-500">Estudiante</p>
                                 </div>
-                                
-                                <button
-                                    onClick={() => handleDelete(student.id)}
-                                    className="p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
-                                    title="Eliminar estudiante"
-                                >
-                                    <Trash2 size={20} />
-                                </button>
                             </div>
 
                             <div className="space-y-3">
