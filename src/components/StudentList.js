@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Users, User, Calendar, Key, Search, Trash2 } from 'lucide-react';
-import { useAuth } from './AuthContext';
+import { useAuth } from '../AuthContext';
 
 const StudentList = ({ students = [], fetchStudents }) => {
     const [searchTerm, setSearchTerm] = useState('');
