@@ -44,6 +44,7 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
       }
     };
+
     fetchUser();
   }, []);
 
@@ -92,6 +93,8 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (foundUser) {
+        // La autenticación es exitosa. Se establece el usuario en el estado de React.
+        // Las políticas RLS de Supabase ahora funcionarán para este usuario.
         setUser({ ...foundUser, role });
         return { message: 'Inicio de sesión exitoso.' };
       } else {
@@ -109,7 +112,7 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     setNetworkError(null);
     try {
-      const { data: existingTeacher } = await supabase
+      const { data: existingTeacher, error: checkError } = await supabase
         .from('teachers')
         .select('email')
         .eq('email', email)
@@ -157,7 +160,8 @@ export const AuthProvider = ({ children }) => {
         throw new Error('El nombre de usuario no puede ser un correo electrónico.');
       }
 
-      const { data: existingStudent } = await supabase
+      // Se verifica si el nombre de usuario ya existe
+      const { data: existingStudent, error: checkError } = await supabase
         .from('students')
         .select('username')
         .eq('username', username)
