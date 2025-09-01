@@ -6,6 +6,7 @@ import StudentRegistration from './StudentRegistration';
 import StudentList from './StudentList';
 import GradeManagement from './GradeManagement';
 import AdminPanel from './AdminPanel'; // Nuevo componente para el admin
+import { PlusCircle } from 'lucide-react';
 import { supabase } from '../utils/supabaseClient';
 
 const TeacherDashboard = () => {
