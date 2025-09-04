@@ -2,17 +2,17 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Users, User, Calendar, Key, Search, BookOpen } from 'lucide-react';
 
-const StudentList = ({ students = [], onStudentDeleted }) => { // Agrega onStudentDeleted aquí
+const StudentList = ({ students = [] }) => {
     const [searchTerm, setSearchTerm] = useState('');
 
     const filteredStudents = students.filter(student =>
         student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (student.username && student.username.toLowerCase().includes(searchTerm.toLowerCase()))
+        student.username.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     if (students.length === 0) {
         return (
-            <motion.div
+            <motion.div 
                 className="bg-white/90 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-12 text-center shadow-xl"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -28,7 +28,7 @@ const StudentList = ({ students = [], onStudentDeleted }) => { // Agrega onStude
     }
 
     return (
-        <motion.div
+        <motion.div 
             className="bg-white/90 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-8 shadow-xl"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -58,7 +58,7 @@ const StudentList = ({ students = [], onStudentDeleted }) => { // Agrega onStude
             </div>
 
             {filteredStudents.length === 0 ? (
-                <motion.div
+                <motion.div 
                     className="bg-white/90 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-12 text-center shadow-xl"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -99,8 +99,6 @@ const StudentList = ({ students = [], onStudentDeleted }) => { // Agrega onStude
                                         {student.username}
                                     </span>
                                 </div>
-
-                                {/* Nuevo bloque para mostrar el nivel de grado */}
                                 <div className="flex items-center gap-2 text-sm">
                                     <BookOpen className="w-4 h-4 text-gray-400" />
                                     <span className="text-gray-600">Grado:</span>
@@ -118,22 +116,13 @@ const StudentList = ({ students = [], onStudentDeleted }) => { // Agrega onStude
                                 </div>
                             </div>
 
-                            <div className="mt-4 pt-4 border-t border-gray-200 flex justify-between items-center">
-                                <div className="flex items-center gap-2">
+                            <div className="mt-4 pt-4 border-t border-gray-200">
+                                <div className="flex items-center justify-between">
                                     <span className="text-sm text-gray-600">Estado:</span>
                                     <span className="px-2 py-1 bg-green-100 text-green-700 rounded-lg text-sm font-medium">
                                         Activo
                                     </span>
                                 </div>
-                                {/* Botón de eliminar, asegúrate de pasarlo como prop */}
-                                <motion.button
-                                    onClick={() => onStudentDeleted(student.id)}
-                                    className="p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors duration-200"
-                                    whileHover={{ scale: 1.1 }}
-                                    whileTap={{ scale: 0.9 }}
-                                >
-                                    <Trash2 className="w-5 h-5" />
-                                </motion.button>
                             </div>
                         </motion.div>
                     ))}
