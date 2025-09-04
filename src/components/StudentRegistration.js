@@ -5,13 +5,13 @@ import { UserPlus, Save, RefreshCw, Book } from 'lucide-react';
 import { supabase } from '../utils/supabaseClient';
 
 const StudentRegistration = ({ onStudentAdded }) => {
-    const { user, registerStudent, networkError } = useAuth(); // Get networkError
+    const { user, registerStudent, networkError } = useAuth();
     const [formData, setFormData] = useState({
         name: '',
         username: '',
         password: '',
         selectedSubjects: [],
-        grade_level: '' // <--- Nuevo campo
+        grade_level: ''
     });
     const [newSubject, setNewSubject] = useState('');
     const [success, setSuccess] = useState('');
@@ -77,7 +77,13 @@ const StudentRegistration = ({ onStudentAdded }) => {
             const teacherId = user.id;
 
             // Llama a la función de registro para crear el estudiante en la tabla 'students'
-            const newStudent = await registerStudent(formData.name, formData.username, formData.password, teacherId);
+            const newStudent = await registerStudent(
+                formData.name,
+                formData.username,
+                formData.password,
+                teacherId,
+                formData.grade_level // <-- ¡Este es el campo agregado!
+            );
 
             if (!newStudent || !newStudent.user) {
                 throw new Error('No se pudo registrar al estudiante. Por favor, revisa la conexión y las credenciales.');
@@ -105,10 +111,10 @@ const StudentRegistration = ({ onStudentAdded }) => {
             }
 
             setSuccess(`Estudiante ${formData.name} registrado exitosamente. Usuario: ${formData.username}, Contraseña: ${formData.password}`);
-            setFormData({ name: '', username: '', password: '', selectedSubjects: [] });
+            setFormData({ name: '', username: '', password: '', selectedSubjects: [], grade_level: '' });
             setNewSubject('');
             if (onStudentAdded) {
-                onStudentAdded(); // Notifica al componente padre para que actualice la lista
+                onStudentAdded();
             }
         } catch (err) {
             setError(err.message || 'Error al registrar estudiante.');
@@ -169,7 +175,7 @@ const StudentRegistration = ({ onStudentAdded }) => {
                         </label>
                         <input
                             type="text"
-                            name="grade_level" // <--- Agrega el nombre del campo
+                            name="grade_level"
                             value={formData.grade_level}
                             onChange={handleInputChange}
                             className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-300"
