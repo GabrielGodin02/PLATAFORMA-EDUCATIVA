@@ -152,7 +152,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   // --- REGISTRO ESTUDIANTE ---
-  const registerStudent = async (name, username, password, teacherId) => {
+  const registerStudent = async (name, username, password, grade_level, teacherId) => {
     setLoading(true);
     setNetworkError(null);
     try {
@@ -182,6 +182,7 @@ export const AuthProvider = ({ children }) => {
             username,
             password: hashedPassword,
             teacher_id: teacherId,
+            grade_level // <--- Agrega el nuevo campo aquí
           },
         ])
         .select()

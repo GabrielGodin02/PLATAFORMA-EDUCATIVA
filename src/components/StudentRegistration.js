@@ -10,7 +10,8 @@ const StudentRegistration = ({ onStudentAdded }) => {
         name: '',
         username: '',
         password: '',
-        selectedSubjects: []
+        selectedSubjects: [],
+        grade_level: '' // <--- Nuevo campo
     });
     const [newSubject, setNewSubject] = useState('');
     const [success, setSuccess] = useState('');
@@ -162,7 +163,19 @@ const StudentRegistration = ({ onStudentAdded }) => {
                             placeholder="Usuario para el estudiante"
                         />
                     </div>
-
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Nivel de Grado
+                        </label>
+                        <input
+                            type="text"
+                            name="grade_level" // <--- Agrega el nombre del campo
+                            value={formData.grade_level}
+                            onChange={handleInputChange}
+                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-300"
+                            placeholder="Ej: 5° Grado"
+                        />
+                    </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             Contraseña
