@@ -1,23 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { Users, UserPlus, BookOpen, BarChart3, Shield } from 'lucide-react';
 import StudentRegistration from './StudentRegistration';
 import StudentList from './StudentList';
 import GradeManagement from './GradeManagement';
-import AdminPanel from './AdminPanel'; // Nuevo componente para el admin
+import AdminPanel from './AdminPanel';
 import AssignSubject from './AssignSubject';
 import RemoveSubject from './RemoveSubject';
 import StudentTransfer from './StudentTransfer';
 import { PlusCircle, Trash2, MoveRight } from 'lucide-react';
 import { supabase } from '../utils/supabaseClient';
+import EditStudentForm from '../components/EditStudentForm'; // <--- Importa el nuevo componente
 
 const TeacherDashboard = () => {
-    const { user, networkError } = useAuth(); // Get networkError from context
+    const { user, networkError, deleteStudent, updateStudent } = useAuth(); // Importa las nuevas funciones del contexto
     const [students, setStudents] = useState([]);
-    const [teachers, setTeachers] = useState([]); // Para el panel de admin
+    const [teachers, setTeachers] = useState([]);
     const [loadingStudents, setLoadingStudents] = useState(true);
     const [activeTab, setActiveTab] = useState('overview');
+    const [editingStudent, setEditingStudent] = useState(null); // Nuevo estado para el estudiante a editar
+    const [success, setSuccess] = useState(null); // Estado para mensajes de éxito
+    const [error, setError] = useState(null); // Estado para mensajes de error
 
     const fetchStudents = async () => {
         setLoadingStudents(true);
@@ -34,7 +38,7 @@ const TeacherDashboard = () => {
             }
         } catch (err) {
             console.error('Error fetching students:', err);
-            // networkError from AuthContext will handle general network issues
+            setError(err.message || 'Error al cargar los estudiantes.');
         } finally {
             setLoadingStudents(false);
         }
@@ -54,6 +58,31 @@ const TeacherDashboard = () => {
         }
     };
 
+    // --- Funciones para manejar la eliminación y edición ---
+    const handleStudentDeleted = async (studentId) => {
+        try {
+            await deleteStudent(studentId);
+            setSuccess('Estudiante eliminado con éxito.');
+            fetchStudents(); // Recarga la lista para reflejar el cambio
+            // Opcional: limpiar los estados de error y éxito después de un tiempo
+            setTimeout(() => setSuccess(null), 5000);
+        } catch (err) {
+            setError(err.message || 'Error al eliminar estudiante.');
+        }
+    };
+
+    const handleStudentUpdated = async (studentId, updatedData) => {
+        try {
+            await updateStudent(studentId, updatedData);
+            setSuccess('Estudiante actualizado con éxito.');
+            setEditingStudent(null); // Cierra el modal de edición
+            fetchStudents(); // Recarga la lista para reflejar el cambio
+            setTimeout(() => setSuccess(null), 5000);
+        } catch (err) {
+            setError(err.message || 'Error al actualizar estudiante.');
+        }
+    };
+
     useEffect(() => {
         if (user?.id) {
             if (user.role === 'teacher') {
@@ -62,7 +91,7 @@ const TeacherDashboard = () => {
                 fetchTeachers();
             }
         }
-    }, [user, activeTab]); // Refrescar al cambiar de usuario o de pestaña
+    }, [user, activeTab]);
 
     const tabs = [
         { id: 'overview', label: 'Resumen', icon: BarChart3, roles: ['teacher'] },
@@ -72,11 +101,11 @@ const TeacherDashboard = () => {
         { id: 'assign-subject', label: 'Asignar Materia', icon: PlusCircle, roles: ['teacher'] },
         { id: 'remove-subject', label: 'Eliminar Materia', icon: Trash2, roles: ['teacher'] },
         { id: 'transfer-student', label: 'Transferir', icon: MoveRight, roles: ['teacher'] },
-        { id: 'admin', label: 'Admin', icon: Shield, roles: ['admin'] } // Nueva pestaña para el admin
+        { id: 'admin', label: 'Admin', icon: Shield, roles: ['admin'] }
     ];
 
     const renderTabContent = () => {
-        if (loadingStudents && user.role === 'teacher') { // Solo mostrar loading para estudiantes si es profesor
+        if (loadingStudents && user.role === 'teacher') {
             return (
                 <div className="flex justify-center items-center h-64">
                     <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
@@ -110,7 +139,7 @@ const TeacherDashboard = () => {
                                     <BookOpen className="w-6 h-6 text-green-600" />
                                 </div>
                                 <div>
-                                    <h3 className="text-2xl font-bold text-gray-900">N/A</h3> {/* Subject is now per student */}
+                                    <h3 className="text-2xl font-bold text-gray-900">N/A</h3>
                                     <p className="text-gray-600">Materia Principal</p>
                                 </div>
                             </div>
@@ -132,7 +161,13 @@ const TeacherDashboard = () => {
                     </motion.div>
                 );
             case 'students':
-                return <StudentList students={students} />;
+                return (
+                    <StudentList
+                        students={students}
+                        onStudentDeleted={handleStudentDeleted}
+                        onStudentUpdated={(student) => setEditingStudent(student)} // Esto establece el estado de edición
+                    />
+                );
             case 'register':
                 return <StudentRegistration onStudentAdded={fetchStudents} />;
             case 'grades':
@@ -150,16 +185,13 @@ const TeacherDashboard = () => {
         }
     };
 
-    // Filtrar pestañas según el rol del usuario
     const visibleTabs = tabs.filter(tab => tab.roles.includes(user.role));
 
-    // Asegurarse de que la pestaña activa sea válida para el rol actual
     useEffect(() => {
         if (user && !visibleTabs.some(tab => tab.id === activeTab)) {
-            setActiveTab(visibleTabs[0]?.id || 'overview'); // Establecer la primera pestaña visible como activa
+            setActiveTab(visibleTabs[0]?.id || 'overview');
         }
     }, [user, visibleTabs, activeTab]);
-
 
     return (
         <div className="space-y-8">
@@ -206,17 +238,52 @@ const TeacherDashboard = () => {
                 </div>
             </motion.div>
 
-            {networkError && (
-                <motion.div 
-                    className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-600"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                >
-                    {networkError}
-                </motion.div>
-            )}
-
+            {/* Mensajes de feedback */}
+            <AnimatePresence>
+                {networkError && (
+                    <motion.div 
+                        className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-600"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        {networkError}
+                    </motion.div>
+                )}
+                {error && (
+                    <motion.div 
+                        className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-600"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        {error}
+                    </motion.div>
+                )}
+                {success && (
+                    <motion.div 
+                        className="p-4 bg-green-50 border border-green-200 rounded-xl text-green-600"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        {success}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+            
             {renderTabContent()}
+
+            {/* Formulario de edición (modal) */}
+            <AnimatePresence>
+                {editingStudent && (
+                    <EditStudentForm
+                        student={editingStudent}
+                        onSave={handleStudentUpdated}
+                        onCancel={() => setEditingStudent(null)}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 };
