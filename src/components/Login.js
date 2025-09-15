@@ -4,14 +4,14 @@ import { useAuth } from '../context/AuthContext';
 import { LogIn, UserPlus, Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
-    const { login, registerTeacher, networkError } = useAuth();
+    const { login, registerTeacher, networkError } = useAuth(); // Get networkError from context
     const [isLogin, setIsLogin] = useState(true);
     const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState({
-        email: '',
+        email: '', // Este campo se usará para email o username
         password: '',
         name: '',
-        role: 'teacher'
+        role: 'teacher' // Default role for registration
     });
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
@@ -32,8 +32,7 @@ const Login = () => {
         setSuccess('');
         setLoading(true);
         try {
-            const res = await login(formData.email, formData.password);
-            setSuccess(res.message);
+            await login(formData.email, formData.password); // Usamos 'email' como el campo genérico
         } catch (err) {
             setError(err.message || 'Error al iniciar sesión. Verifica tus credenciales.');
         } finally {
@@ -58,12 +57,13 @@ const Login = () => {
                 await registerTeacher(formData.name, formData.email, formData.password);
                 setSuccess('¡Registro de profesor exitoso! Ahora puedes iniciar sesión.');
             } else {
+                // Este formulario solo registra profesores. Los estudiantes son registrados por profesores.
                 setError('Solo se permite el registro de profesores en este formulario.');
                 setLoading(false);
                 return;
             }
-            setFormData({ email: '', password: '', name: '', role: 'teacher' });
-            setIsLogin(true);
+            setFormData({ email: '', password: '', name: '', role: 'teacher' }); // Reset form
+            setIsLogin(true); // Redirect to login form
         } catch (err) {
             setError(err.message || 'Error al registrar.');
         } finally {
@@ -116,6 +116,20 @@ const Login = () => {
                                     placeholder="Tu nombre completo"
                                 />
                             </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Rol
+                                </label>
+                                <select
+                                    name="role"
+                                    value={formData.role}
+                                    onChange={handleInputChange}
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-300"
+                                >
+                                    <option value="teacher">Profesor</option>
+                                    {/* <option value="student">Estudiante</option> */}
+                                </select>
+                            </div>
                         </>
                     )}
 
@@ -124,7 +138,7 @@ const Login = () => {
                             {isLogin ? 'Email o Nombre de Usuario' : 'Email'}
                         </label>
                         <input
-                            type="text"
+                            type="text" // Cambiado a text para aceptar username
                             name="email"
                             value={formData.email}
                             onChange={handleInputChange}
