@@ -32,17 +32,8 @@ const Login = () => {
         setSuccess('');
         setLoading(true);
         try {
-            const result = await login(formData.email, formData.password);
-
-            if (result) {
-                if (result.role === 'admin') {
-                    setSuccess('Inicio de sesión como Administrador.');
-                } else if (result.role === 'teacher') {
-                    setSuccess('Inicio de sesión como Profesor.');
-                } else if (result.role === 'student') {
-                    setSuccess('Inicio de sesión como Estudiante.');
-                }
-            }
+            const res = await login(formData.email, formData.password);
+            setSuccess(res.message);
         } catch (err) {
             setError(err.message || 'Error al iniciar sesión. Verifica tus credenciales.');
         } finally {
@@ -124,19 +115,6 @@ const Login = () => {
                                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-300"
                                     placeholder="Tu nombre completo"
                                 />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Rol
-                                </label>
-                                <select
-                                    name="role"
-                                    value={formData.role}
-                                    onChange={handleInputChange}
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-300"
-                                >
-                                    <option value="teacher">Profesor</option>
-                                </select>
                             </div>
                         </>
                     )}

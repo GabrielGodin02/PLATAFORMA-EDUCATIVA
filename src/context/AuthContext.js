@@ -17,7 +17,6 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [networkError, setNetworkError] = useState(null);
 
-    // Manejo de errores global
     const handleError = (err) => {
         console.error('Auth operation failed:', err);
         if (
@@ -31,7 +30,6 @@ export const AuthProvider = ({ children }) => {
         throw err;
     };
 
-    // Inicialización
     useEffect(() => {
         setLoading(false);
     }, []);
@@ -45,35 +43,27 @@ export const AuthProvider = ({ children }) => {
             let foundUser = null;
             let role = null;
 
-            // 🔹 Admin login hardcodeado
-            if (emailOrUsername === 'admin02@gmail.com' && password === 'admin0240') {
-                foundUser = { id: 'admin-uuid', email: emailOrUsername, name: 'Administrador' };
-                role = 'admin';
-            }
+            // Buscar en la tabla de profesores (aquí también está el admin)
+            const { data: teacherData } = await supabase
+                .from('teachers')
+                .select('*')
+                .eq('email', emailOrUsername)
+                .maybeSingle();
 
-            // 🔹 Buscar en la tabla de profesores
-            if (!foundUser) {
-                const { data: teacherData } = await supabase
-                    .from('teachers')
-                    .select('*')
-                    .eq('email', emailOrUsername)
-                    .maybeSingle();
-
-                if (teacherData) {
-                    if (bcrypt.compareSync(password, teacherData.password)) {
-                        if (!teacherData.is_active) {
-                            throw new Error(
-                                'Tu cuenta de profesor está desactivada. Contacta al administrador.'
-                            );
-                        }
-                        foundUser = teacherData;
-                        role = 'teacher';
+            if (teacherData) {
+                if (bcrypt.compareSync(password, teacherData.password)) {
+                    if (!teacherData.is_active) {
+                        throw new Error(
+                            'Tu cuenta de profesor está desactivada. Contacta al administrador.'
+                        );
                     }
+                    foundUser = teacherData;
+                    role = teacherData.role === 'admin' ? 'admin' : 'teacher';
                 }
             }
 
-            // 🔹 Buscar en la tabla de estudiantes
             if (!foundUser) {
+                // Buscar en la tabla de estudiantes
                 const { data: studentData } = await supabase
                     .from('students')
                     .select('*')
@@ -89,9 +79,8 @@ export const AuthProvider = ({ children }) => {
             }
 
             if (foundUser) {
-                const loggedUser = { ...foundUser, role };
-                setUser(loggedUser);
-                return { message: 'Inicio de sesión exitoso.', ...loggedUser };
+                setUser({ ...foundUser, role });
+                return { message: 'Inicio de sesión exitoso.' };
             } else {
                 throw new Error('Credenciales incorrectas.');
             }
@@ -128,6 +117,7 @@ export const AuthProvider = ({ children }) => {
                         email,
                         password: hashedPassword,
                         is_active: true,
+                        role: 'teacher'
                     },
                 ])
                 .select()
@@ -195,7 +185,7 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // --- NUEVAS FUNCIONES ---
+    // --- ELIMINAR ESTUDIANTE ---
     const deleteStudent = async (studentId) => {
         try {
             const { error } = await supabase
@@ -211,6 +201,7 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    // --- EDITAR ESTUDIANTE ---
     const updateStudent = async (studentId, updatedData) => {
         try {
             const { data, error } = await supabase
