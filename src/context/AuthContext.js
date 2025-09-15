@@ -16,11 +16,6 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [networkError, setNetworkError] = useState(null);
-    const [isAdmin, setIsAdmin] = useState(false); // 👈 Nuevo
-
-    // credenciales del admin fijo
-    const ADMIN_EMAIL = "admin02@gmail.com";
-    const ADMIN_PASSWORD = "admin0240";
 
     // Manejo de errores global
     const handleError = (err) => {
@@ -41,7 +36,7 @@ export const AuthProvider = ({ children }) => {
         const fetchUser = async () => {
             setLoading(true);
             try {
-                setUser(null);
+                setUser(null); // Aquí podrías restaurar sesión si la guardas en localStorage
             } catch (err) {
                 handleError(err);
                 setUser(null);
@@ -59,38 +54,46 @@ export const AuthProvider = ({ children }) => {
         setNetworkError(null);
 
         try {
-            // 🔑 Verificar si es admin
-            if (emailOrUsername === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-                const adminUser = { id: "admin-001", email: ADMIN_EMAIL, role: "admin" };
-                setUser(adminUser);
-                setIsAdmin(true);
-                return { message: 'Inicio de sesión exitoso como administrador.' };
-            }
-
             let foundUser = null;
             let role = null;
 
-            // Buscar en la tabla de profesores
-            const { data: teacherData } = await supabase
-                .from('teachers')
+            // 1. Buscar en la tabla de admins primero
+            const { data: adminData } = await supabase
+                .from('admins')
                 .select('*')
                 .eq('email', emailOrUsername)
                 .maybeSingle();
 
-            if (teacherData) {
-                if (bcrypt.compareSync(password, teacherData.password)) {
-                    if (!teacherData.is_active) {
-                        throw new Error(
-                            'Tu cuenta de profesor está desactivada. Contacta al administrador.'
-                        );
-                    }
-                    foundUser = teacherData;
-                    role = 'teacher';
+            if (adminData) {
+                if (bcrypt.compareSync(password, adminData.password)) {
+                    foundUser = adminData;
+                    role = 'admin';
                 }
             }
 
+            // 2. Si no es admin, buscar en teachers
             if (!foundUser) {
-                // Buscar en la tabla de estudiantes
+                const { data: teacherData } = await supabase
+                    .from('teachers')
+                    .select('*')
+                    .eq('email', emailOrUsername)
+                    .maybeSingle();
+
+                if (teacherData) {
+                    if (bcrypt.compareSync(password, teacherData.password)) {
+                        if (!teacherData.is_active) {
+                            throw new Error(
+                                'Tu cuenta de profesor está desactivada. Contacta al administrador.'
+                            );
+                        }
+                        foundUser = teacherData;
+                        role = 'teacher';
+                    }
+                }
+            }
+
+            // 3. Si no es teacher, buscar en students
+            if (!foundUser) {
                 const { data: studentData } = await supabase
                     .from('students')
                     .select('*')
@@ -105,9 +108,9 @@ export const AuthProvider = ({ children }) => {
                 }
             }
 
+            // 4. Resultado final
             if (foundUser) {
                 setUser({ ...foundUser, role });
-                setIsAdmin(false); // 👈 No es admin
                 return { message: 'Inicio de sesión exitoso.' };
             } else {
                 throw new Error('Credenciales incorrectas.');
@@ -212,8 +215,7 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // --- NUEVAS FUNCIONES PARA ELIMINAR Y EDITAR ESTUDIANTES ---
-
+    // --- FUNCIONES PARA ELIMINAR Y EDITAR ESTUDIANTES ---
     const deleteStudent = async (studentId) => {
         try {
             const { error } = await supabase
@@ -252,7 +254,6 @@ export const AuthProvider = ({ children }) => {
         return new Promise((resolve) => {
             setTimeout(() => {
                 setUser(null);
-                setIsAdmin(false); // 👈 Reinicia admin
                 setLoading(false);
                 resolve({ message: 'Cierre de sesión exitoso.' });
             }, 300);
@@ -261,7 +262,6 @@ export const AuthProvider = ({ children }) => {
 
     const value = {
         user,
-        isAdmin, // 👈 Nuevo
         login,
         registerTeacher,
         registerStudent,
