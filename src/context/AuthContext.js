@@ -33,19 +33,7 @@ export const AuthProvider = ({ children }) => {
 
     // Inicialización
     useEffect(() => {
-        const fetchUser = async () => {
-            setLoading(true);
-            try {
-                setUser(null); // Aquí podrías restaurar sesión si la guardas en localStorage
-            } catch (err) {
-                handleError(err);
-                setUser(null);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchUser();
+        setLoading(false);
     }, []);
 
     // --- LOGIN ---
@@ -57,21 +45,13 @@ export const AuthProvider = ({ children }) => {
             let foundUser = null;
             let role = null;
 
-            // 1. Buscar en la tabla de admins primero
-            const { data: adminData } = await supabase
-                .from('admins')
-                .select('*')
-                .eq('email', emailOrUsername)
-                .maybeSingle();
-
-            if (adminData) {
-                if (bcrypt.compareSync(password, adminData.password)) {
-                    foundUser = adminData;
-                    role = 'admin';
-                }
+            // 🔹 Admin login hardcodeado
+            if (emailOrUsername === 'admin02@gmail.com' && password === 'admin0240') {
+                foundUser = { id: 'admin-uuid', email: emailOrUsername, name: 'Administrador' };
+                role = 'admin';
             }
 
-            // 2. Si no es admin, buscar en teachers
+            // 🔹 Buscar en la tabla de profesores
             if (!foundUser) {
                 const { data: teacherData } = await supabase
                     .from('teachers')
@@ -92,7 +72,7 @@ export const AuthProvider = ({ children }) => {
                 }
             }
 
-            // 3. Si no es teacher, buscar en students
+            // 🔹 Buscar en la tabla de estudiantes
             if (!foundUser) {
                 const { data: studentData } = await supabase
                     .from('students')
@@ -108,10 +88,10 @@ export const AuthProvider = ({ children }) => {
                 }
             }
 
-            // 4. Resultado final
             if (foundUser) {
-                setUser({ ...foundUser, role });
-                return { message: 'Inicio de sesión exitoso.' };
+                const loggedUser = { ...foundUser, role };
+                setUser(loggedUser);
+                return { message: 'Inicio de sesión exitoso.', ...loggedUser };
             } else {
                 throw new Error('Credenciales incorrectas.');
             }
@@ -215,7 +195,7 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // --- FUNCIONES PARA ELIMINAR Y EDITAR ESTUDIANTES ---
+    // --- NUEVAS FUNCIONES ---
     const deleteStudent = async (studentId) => {
         try {
             const { error } = await supabase
