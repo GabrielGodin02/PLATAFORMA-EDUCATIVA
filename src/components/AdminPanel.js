@@ -19,7 +19,7 @@ const AdminPanel = ({ teachers, onTeacherStatusChange }) => {
 
     const { data: students, error } = await supabase
       .from("students")
-      .select("id, name, grade_level, subjects(name, grades(score))")
+      .select("id, name, grade_level, subjects(name, grades(value))")
       .eq("teacher_id", teacher.id);
 
     if (!error) {
