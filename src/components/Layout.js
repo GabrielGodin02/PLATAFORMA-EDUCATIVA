@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, GraduationCap, User, BookOpen } from 'lucide-react';
+import { LogOut, GraduationCap, User, BookOpen, Shield } from 'lucide-react';
 
 const Layout = ({ children }) => {
     const { user, logout } = useAuth();
@@ -10,9 +10,21 @@ const Layout = ({ children }) => {
         logout();
     };
 
+    const getRoleLabel = (role) => {
+        if (role === 'admin') return 'Administrador';
+        if (role === 'teacher') return 'Profesor';
+        return 'Estudiante';
+    };
+
+    const getRoleIcon = (role) => {
+        if (role === 'admin') return <Shield className="w-5 h-5 text-purple-600" />;
+        if (role === 'teacher') return <BookOpen className="w-5 h-5 text-blue-600" />;
+        return <User className="w-5 h-5 text-green-600" />;
+    };
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-            <motion.header 
+            <motion.header
                 className="bg-white/90 backdrop-blur-xl border-b border-gray-200/50 shadow-sm"
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -21,7 +33,7 @@ const Layout = ({ children }) => {
                 <div className="container mx-auto px-4 py-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <motion.div 
+                            <motion.div
                                 className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl"
                                 whileHover={{ scale: 1.05 }}
                             >
@@ -38,13 +50,9 @@ const Layout = ({ children }) => {
                         {user && (
                             <div className="flex items-center gap-4">
                                 <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-xl">
-                                    {user.role === 'teacher' ? (
-                                        <BookOpen className="w-5 h-5 text-blue-600" />
-                                    ) : (
-                                        <User className="w-5 h-5 text-green-600" />
-                                    )}
+                                    {getRoleIcon(user.role)}
                                     <span className="font-medium text-gray-700">
-                                        {user.name} ({user.role === 'teacher' ? 'Profesor' : 'Estudiante'})
+                                        {user.name} ({getRoleLabel(user.role)})
                                     </span>
                                 </div>
                                 <motion.button
