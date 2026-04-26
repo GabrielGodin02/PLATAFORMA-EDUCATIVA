@@ -1,8 +1,15 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Users, User, Calendar, Key, Search, BookOpen, Edit, Trash2 } from 'lucide-react';
+import { Users, User, Calendar, Key, Search, BookOpen, Edit, Trash2, Trophy } from 'lucide-react';
 
-const StudentList = ({ students = [], onStudentUpdated, onStudentDeleted }) => {
+const getRankingMedal = (ranking) => {
+    if (ranking === 1) return { emoji: '🥇', color: 'text-yellow-600', bg: 'bg-yellow-50 border-yellow-200' };
+    if (ranking === 2) return { emoji: '🥈', color: 'text-gray-500', bg: 'bg-gray-50 border-gray-200' };
+    if (ranking === 3) return { emoji: '🥉', color: 'text-orange-600', bg: 'bg-orange-50 border-orange-200' };
+    return { emoji: `#${ranking}`, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-200' };
+};
+
+const StudentList = ({ students = [], onStudentUpdated, onStudentDeleted, resultsPublished }) => {
     const [searchTerm, setSearchTerm] = useState('');
 
     const filteredStudents = students.filter(student =>
@@ -12,11 +19,10 @@ const StudentList = ({ students = [], onStudentUpdated, onStudentDeleted }) => {
 
     if (students.length === 0) {
         return (
-            <motion.div 
+            <motion.div
                 className="bg-white/90 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-12 text-center shadow-xl"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
             >
                 <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
                     <Users className="w-12 h-12 text-blue-500" />
@@ -28,11 +34,10 @@ const StudentList = ({ students = [], onStudentUpdated, onStudentDeleted }) => {
     }
 
     return (
-        <motion.div 
+        <motion.div
             className="bg-white/90 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-8 shadow-xl"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
         >
             <div className="flex items-center gap-4 mb-8">
                 <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl">
@@ -58,97 +63,85 @@ const StudentList = ({ students = [], onStudentUpdated, onStudentDeleted }) => {
             </div>
 
             {filteredStudents.length === 0 ? (
-                <motion.div 
-                    className="bg-white/90 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-12 text-center shadow-xl"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                >
-                    <div className="w-24 h-24 bg-gradient-to-br from-red-100 to-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <Search className="w-12 h-12 text-red-500" />
-                    </div>
-                    <h3 className="text-2xl font-bold text-gray-800 mb-3">No se encontraron estudiantes</h3>
-                    <p className="text-gray-500">Intenta ajustar tu búsqueda o registra nuevos estudiantes.</p>
-                </motion.div>
+                <div className="text-center py-12 text-gray-500">No se encontraron estudiantes.</div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredStudents.map((student, index) => (
-                        <motion.div
-                            key={student.id}
-                            className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.1, duration: 0.5 }}
-                            whileHover={{ scale: 1.02 }}
-                        >
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="p-2 bg-blue-100 rounded-xl">
-                                    <User className="w-5 h-5 text-blue-600" />
-                                </div>
-                                <div className="flex-1">
-                                    <h3 className="font-semibold text-gray-900">{student.name}</h3>
-                                    <p className="text-sm text-gray-500">Estudiante</p>
-                                </div>
-                            </div>
-
-                            <div className="space-y-3">
-                                <div className="flex items-center gap-2 text-sm">
-                                    <Key className="w-4 h-4 text-gray-400" />
-                                    <span className="text-gray-600">Usuario:</span>
-                                    <span className="font-mono bg-gray-100 px-2 py-1 rounded text-gray-800">
-                                        {student.username}
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-2 text-sm">
-                                    <BookOpen className="w-4 h-4 text-gray-400" />
-                                    <span className="text-gray-600">Grado:</span>
-                                    <span className="font-medium bg-gray-100 px-2 py-1 rounded text-gray-800">
-                                        {student.grade_level || 'No especificado'}
-                                    </span>
+                    {filteredStudents.map((student, index) => {
+                        const medal = resultsPublished && student.ranking ? getRankingMedal(student.ranking) : null;
+                        return (
+                            <motion.div
+                                key={student.id}
+                                className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.1 }}
+                                whileHover={{ scale: 1.02 }}
+                            >
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="p-2 bg-blue-100 rounded-xl">
+                                        <User className="w-5 h-5 text-blue-600" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="font-semibold text-gray-900">{student.name}</h3>
+                                        <p className="text-sm text-gray-500">Estudiante</p>
+                                    </div>
+                                    {/* Puesto */}
+                                    {medal && (
+                                        <div className={`flex items-center gap-1 px-3 py-1 rounded-full border text-sm font-bold ${medal.bg} ${medal.color}`}>
+                                            <span>{medal.emoji}</span>
+                                        </div>
+                                    )}
                                 </div>
 
-                                <div className="flex items-center gap-2 text-sm">
-                                    <Calendar className="w-4 h-4 text-gray-400" />
-                                    <span className="text-gray-600">Registrado:</span>
-                                    <span className="text-gray-800">
-                                        {new Date(student.created_at).toLocaleDateString()}
-                                    </span>
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <Key className="w-4 h-4 text-gray-400" />
+                                        <span className="text-gray-600">Usuario:</span>
+                                        <span className="font-mono bg-gray-100 px-2 py-1 rounded text-gray-800">{student.username}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <BookOpen className="w-4 h-4 text-gray-400" />
+                                        <span className="text-gray-600">Grado:</span>
+                                        <span className="font-medium bg-gray-100 px-2 py-1 rounded text-gray-800">{student.grade_level || 'No especificado'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <Calendar className="w-4 h-4 text-gray-400" />
+                                        <span className="text-gray-600">Registrado:</span>
+                                        <span className="text-gray-800">{new Date(student.created_at).toLocaleDateString()}</span>
+                                    </div>
+                                    {resultsPublished && student.ranking && (
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <Trophy className="w-4 h-4 text-yellow-500" />
+                                            <span className="text-gray-600">Puesto:</span>
+                                            <span className="font-bold text-gray-800">{student.ranking}°</span>
+                                        </div>
+                                    )}
                                 </div>
-                            </div>
 
-                            <div className="mt-4 pt-4 border-t border-gray-200 flex justify-between items-center">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm text-gray-600">Estado:</span>
-                                    <span className="px-2 py-1 bg-green-100 text-green-700 rounded-lg text-sm font-medium">
-                                        Activo
-                                    </span>
+                                <div className="mt-4 pt-4 border-t border-gray-200 flex justify-between items-center">
+                                    <span className="px-2 py-1 bg-green-100 text-green-700 rounded-lg text-sm font-medium">Activo</span>
+                                    <div className="flex gap-2">
+                                        <motion.button
+                                            onClick={() => onStudentDeleted(student.id)}
+                                            className="p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
+                                            whileHover={{ scale: 1.1 }}
+                                            whileTap={{ scale: 0.9 }}
+                                        >
+                                            <Trash2 className="w-5 h-5" />
+                                        </motion.button>
+                                        <motion.button
+                                            onClick={() => onStudentUpdated(student)}
+                                            className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
+                                            whileHover={{ scale: 1.1 }}
+                                            whileTap={{ scale: 0.9 }}
+                                        >
+                                            <Edit className="w-5 h-5" />
+                                        </motion.button>
+                                    </div>
                                 </div>
-                                <div className="flex gap-2">
-                                    {/* Botón para ELIMINAR */}
-                                    <motion.button
-                                        onClick={() => onStudentDeleted(student.id)}
-                                        className="p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors duration-200"
-                                        whileHover={{ scale: 1.1 }}
-                                        whileTap={{ scale: 0.9 }}
-                                        aria-label="Eliminar estudiante"
-                                    >
-                                        <Trash2 className="w-5 h-5" />
-                                    </motion.button>
-
-                                    {/* Botón para EDITAR */}
-                                    <motion.button
-                                        onClick={() => onStudentUpdated(student)}
-                                        className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors duration-200"
-                                        whileHover={{ scale: 1.1 }}
-                                        whileTap={{ scale: 0.9 }}
-                                        aria-label="Editar estudiante"
-                                    >
-                                        <Edit className="w-5 h-5" />
-                                    </motion.button>
-                                </div>
-                            </div>
-                        </motion.div>
-                    ))}
+                            </motion.div>
+                        );
+                    })}
                 </div>
             )}
         </motion.div>
