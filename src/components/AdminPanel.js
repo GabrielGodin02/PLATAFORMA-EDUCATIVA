@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp, Users, Trash2, KeyRound, BookOpen } from "lucide-react";
 import { supabase } from "../utils/supabaseClient";
+import bcrypt from 'bcryptjs';
 
 const AdminPanel = ({ teachers, onTeacherStatusChange }) => {
   const [expandedTeacher, setExpandedTeacher] = useState(null);
@@ -35,9 +36,11 @@ const AdminPanel = ({ teachers, onTeacherStatusChange }) => {
     const newPassword = prompt("Ingrese la nueva contraseña:");
     if (!newPassword) return;
 
+    const hashedPassword = bcrypt.hashSync(newPassword, 10);
+
     const { error } = await supabase
       .from("teachers")
-      .update({ password: newPassword })
+      .update({ password: hashedPassword })
       .eq("id", teacherId);
 
     if (error) {
@@ -146,7 +149,7 @@ const AdminPanel = ({ teachers, onTeacherStatusChange }) => {
                                 <BookOpen className="w-4 h-4 text-blue-500" />
                                 {subj.name} –{" "}
                                 {subj.grades?.length > 0
-                                  ? `${subj.grades[0].score}/5`
+                                  ? `${subj.grades[0].value}/5`
                                   : "Sin notas"}
                               </li>
                             ))}
