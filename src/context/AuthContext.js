@@ -17,7 +17,6 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [networkError, setNetworkError] = useState(null);
 
-    // Manejo de errores global
     const handleError = (err) => {
         console.error('Auth operation failed:', err);
         if (
@@ -31,13 +30,10 @@ export const AuthProvider = ({ children }) => {
         throw err;
     };
 
-    // Inicialización
     useEffect(() => {
         const fetchUser = async () => {
             setLoading(true);
             try {
-                // En una aplicación real, aquí obtendrías la sesión del usuario
-                // Por simplicidad, lo dejamos vacío para este ejemplo
                 setUser(null);
             } catch (err) {
                 handleError(err);
@@ -46,11 +42,9 @@ export const AuthProvider = ({ children }) => {
                 setLoading(false);
             }
         };
-
         fetchUser();
     }, []);
 
-    // --- LOGIN ---
     const login = async (emailOrUsername, password) => {
         setLoading(true);
         setNetworkError(null);
@@ -59,27 +53,41 @@ export const AuthProvider = ({ children }) => {
             let foundUser = null;
             let role = null;
 
-            // Buscar en la tabla de profesores
-            const { data: teacherData } = await supabase
-                .from('teachers')
+            // 1. Buscar en admins
+            const { data: adminData } = await supabase
+                .from('admins')
                 .select('*')
                 .eq('email', emailOrUsername)
                 .maybeSingle();
 
-            if (teacherData) {
-                if (bcrypt.compareSync(password, teacherData.password)) {
-                    if (!teacherData.is_active) {
-                        throw new Error(
-                            'Tu cuenta de profesor está desactivada. Contacta al administrador.'
-                        );
-                    }
-                    foundUser = teacherData;
-                    role = 'teacher';
+            if (adminData) {
+                if (bcrypt.compareSync(password, adminData.password)) {
+                    foundUser = adminData;
+                    role = 'admin';
                 }
             }
 
+            // 2. Buscar en profesores
             if (!foundUser) {
-                // Buscar en la tabla de estudiantes
+                const { data: teacherData } = await supabase
+                    .from('teachers')
+                    .select('*')
+                    .eq('email', emailOrUsername)
+                    .maybeSingle();
+
+                if (teacherData) {
+                    if (bcrypt.compareSync(password, teacherData.password)) {
+                        if (!teacherData.is_active) {
+                            throw new Error('Tu cuenta de profesor está desactivada. Contacta al administrador.');
+                        }
+                        foundUser = teacherData;
+                        role = 'teacher';
+                    }
+                }
+            }
+
+            // 3. Buscar en estudiantes
+            if (!foundUser) {
                 const { data: studentData } = await supabase
                     .from('students')
                     .select('*')
@@ -107,17 +115,16 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // --- REGISTRO PROFESOR ---
     const registerTeacher = async (name, email, password) => {
         setLoading(true);
         setNetworkError(null);
         try {
-            const { data: existingTeacher, error: checkError } = await supabase
+            const { data: existingTeacher } = await supabase
                 .from('teachers')
                 .select('email')
                 .eq('email', email)
                 .maybeSingle();
-            
+
             if (existingTeacher) {
                 throw new Error('El correo electrónico ya está registrado como profesor.');
             }
@@ -126,15 +133,13 @@ export const AuthProvider = ({ children }) => {
 
             const { data, error } = await supabase
                 .from('teachers')
-                .insert([
-                    {
-                        id: crypto.randomUUID(),
-                        name,
-                        email,
-                        password: hashedPassword,
-                        is_active: true,
-                    },
-                ])
+                .insert([{
+                    id: crypto.randomUUID(),
+                    name,
+                    email,
+                    password: hashedPassword,
+                    is_active: true,
+                }])
                 .select()
                 .single();
 
@@ -151,7 +156,6 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // --- REGISTRO ESTUDIANTE ---
     const registerStudent = async (name, username, password, teacherId, grade_level) => {
         setLoading(true);
         setNetworkError(null);
@@ -160,7 +164,7 @@ export const AuthProvider = ({ children }) => {
                 throw new Error('El nombre de usuario no puede ser un correo electrónico.');
             }
 
-            const { data: existingStudent, error: checkError } = await supabase
+            const { data: existingStudent } = await supabase
                 .from('students')
                 .select('username')
                 .eq('username', username)
@@ -174,16 +178,14 @@ export const AuthProvider = ({ children }) => {
 
             const { data, error } = await supabase
                 .from('students')
-                .insert([
-                    {
-                        id: crypto.randomUUID(),
-                        name,
-                        username,
-                        password: hashedPassword,
-                        teacher_id: teacherId,
-                        grade_level
-                    },
-                ])
+                .insert([{
+                    id: crypto.randomUUID(),
+                    name,
+                    username,
+                    password: hashedPassword,
+                    teacher_id: teacherId,
+                    grade_level
+                }])
                 .select()
                 .single();
 
@@ -200,8 +202,6 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // --- NUEVAS FUNCIONES PARA ELIMINAR Y EDITAR ESTUDIANTES ---
-
     const deleteStudent = async (studentId) => {
         try {
             const { error } = await supabase
@@ -210,7 +210,6 @@ export const AuthProvider = ({ children }) => {
                 .eq('id', studentId);
 
             if (error) throw error;
-
             return { success: true };
         } catch (err) {
             handleError(err);
@@ -226,14 +225,12 @@ export const AuthProvider = ({ children }) => {
                 .select();
 
             if (error) throw error;
-            
             return data;
         } catch (err) {
             handleError(err);
         }
     };
 
-    // --- LOGOUT ---
     const logout = async () => {
         setLoading(true);
         setNetworkError(null);
@@ -254,8 +251,8 @@ export const AuthProvider = ({ children }) => {
         logout,
         loading,
         networkError,
-        deleteStudent, // <--- Agregada
-        updateStudent, // <--- Agregada
+        deleteStudent,
+        updateStudent,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

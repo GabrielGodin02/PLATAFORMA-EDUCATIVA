@@ -5,6 +5,7 @@ import Layout from './components/Layout';
 import Login from './components/Login';
 import TeacherDashboard from './components/TeacherDashboard';
 import StudentDashboard from './components/StudentDashboard';
+import AdminDashboard from './components/AdminDashboard';
 
 const AppContent = () => {
     const { user, loading } = useAuth();
@@ -26,7 +27,13 @@ const AppContent = () => {
 
     return (
         <Layout>
-            {user.role === 'teacher' ? <TeacherDashboard /> : <StudentDashboard />}
+            {user.role === 'admin' ? (
+                <AdminDashboard />
+            ) : user.role === 'teacher' ? (
+                <TeacherDashboard />
+            ) : (
+                <StudentDashboard />
+            )}
         </Layout>
     );
 };
