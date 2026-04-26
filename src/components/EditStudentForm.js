@@ -1,14 +1,16 @@
-// EditStudentForm.js
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Save, X } from 'lucide-react';
+import { Save, X, Eye, EyeOff } from 'lucide-react';
+import bcrypt from 'bcryptjs';
 
 const EditStudentForm = ({ student, onSave, onCancel }) => {
     const [formData, setFormData] = useState({
         name: student.name,
-        grade_level: student.grade_level,
+        grade_level: student.grade_level || '',
         username: student.username,
+        newPassword: '',
     });
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -23,8 +25,20 @@ const EditStudentForm = ({ student, onSave, onCancel }) => {
         setLoading(true);
         setError(null);
         try {
-            await onSave(student.id, formData);
-            onCancel(); // Cierra el formulario
+            const updatedData = {
+                name: formData.name,
+                grade_level: formData.grade_level,
+                username: formData.username,
+            };
+
+            // Si ingresó nueva contraseña, hashearla y guardar también temp_password
+            if (formData.newPassword.trim()) {
+                updatedData.password = bcrypt.hashSync(formData.newPassword, 10);
+                updatedData.temp_password = formData.newPassword; // texto plano visible
+            }
+
+            await onSave(student.id, updatedData);
+            onCancel();
         } catch (err) {
             setError('Error al actualizar el estudiante.');
             setLoading(false);
@@ -53,32 +67,77 @@ const EditStudentForm = ({ student, onSave, onCancel }) => {
                     </div>
 
                     <div className="space-y-4">
-                        <input
-                            type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleInputChange}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                            placeholder="Nombre"
-                        />
-                        <input
-                            type="text"
-                            name="username"
-                            value={formData.username}
-                            onChange={handleInputChange}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                            placeholder="Usuario"
-                        />
-                        <input
-                            type="text"
-                            name="grade_level"
-                            value={formData.grade_level || ''}
-                            onChange={handleInputChange}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                            placeholder="Grado"
-                        />
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                            <input
+                                type="text"
+                                name="name"
+                                value={formData.name}
+                                onChange={handleInputChange}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                placeholder="Nombre completo"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Usuario</label>
+                            <input
+                                type="text"
+                                name="username"
+                                value={formData.username}
+                                onChange={handleInputChange}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                placeholder="Nombre de usuario"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Grado</label>
+                            <input
+                                type="text"
+                                name="grade_level"
+                                value={formData.grade_level}
+                                onChange={handleInputChange}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                placeholder="Ej: 5° Grado"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Contraseña actual
+                            </label>
+                            <div className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-700 font-mono text-sm">
+                                {student.temp_password || 'No disponible'}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Nueva contraseña <span className="text-gray-400">(dejar vacío para no cambiar)</span>
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    name="newPassword"
+                                    value={formData.newPassword}
+                                    onChange={handleInputChange}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 pr-12"
+                                    placeholder="Nueva contraseña"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                >
+                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                </button>
+                            </div>
+                        </div>
                     </div>
+
                     {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+
                     <div className="flex justify-end mt-6">
                         <motion.button
                             onClick={handleSave}

@@ -174,6 +174,7 @@ export const AuthProvider = ({ children }) => {
                 throw new Error('El nombre de usuario ya está en uso.');
             }
 
+            // 👇 Primero hashear, luego insertar
             const hashedPassword = bcrypt.hashSync(password, 10);
 
             const { data, error } = await supabase
@@ -183,6 +184,7 @@ export const AuthProvider = ({ children }) => {
                     name,
                     username,
                     password: hashedPassword,
+                    temp_password: password, // 👈 contraseña visible para el profesor
                     teacher_id: teacherId,
                     grade_level
                 }])
